@@ -77,7 +77,7 @@ public class EditNameAlert extends DialogFragment {
         EditText editText = v.findViewById(R.id.et_name);
         Button btNegative = v.findViewById(R.id.bt_negative);
         Button btPositive = v.findViewById(R.id.bt_positive);
-        AlertDialog dialog = new AlertDialog.Builder(requireActivity())
+        AlertDialog dialog = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(requireActivity())
                 .setTitle(title).setView(v).create();
         btNegative.setOnClickListener(v1 -> dismiss());
         btPositive.setOnClickListener(v1 -> onClickOk(editText));

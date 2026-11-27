@@ -10,14 +10,6 @@
         android:title="@string/pref_theme" />
     <SwitchPreferenceCompat
         android:defaultValue="false"
-        android:key="enable-actionbar"
-        android:title="@string/pref_enable_actionbar" />
-    <SwitchPreferenceCompat
-        android:defaultValue="false"
-        android:key="enable-statusbar"
-        android:title="@string/pref_enable_statusbar" />
-    <SwitchPreferenceCompat
-        android:defaultValue="false"
         android:key="enable-wakelock"
         android:title="@string/pref_wakelock" />
     <SwitchPreferenceCompat

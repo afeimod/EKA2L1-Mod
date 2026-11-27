@@ -43,6 +43,7 @@
     <string name="ng1_menu_title">N-Gage</string>
     <string name="ng2_menu_title">N-Gage 2.0</string>
     <string name="install_preconfigured_pack">Install preconfigured pack</string>
+    <string name="jlmod_java_me">Java ME (JL-Mod)</string>
     <string name="delete_existing_data_title">Delete existing data</string>
     <string name="delete_existing_data">Do you want to delete existing emulator data (devices, apps, games,...)?</string>
     <string name="fail_to_install_preconfigured_pack">Failed to install preconfigured pack!</string>

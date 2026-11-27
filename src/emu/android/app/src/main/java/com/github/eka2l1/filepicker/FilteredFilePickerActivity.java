@@ -46,12 +46,26 @@ public class FilteredFilePickerActivity extends AbstractFilePickerActivity<File>
         } else {
             setTheme(R.style.FilePickerTheme_Light);
         }
+        extensions = getIntent().getStringArrayExtra(EXTRA_EXTENSIONS);
+        if (extensions == null) extensions = new String[0];
         super.onCreate(savedInstanceState);
+        com.github.eka2l1.phone.PhoneModel.applyOrientation(this);
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks(){
+            @Override public void onFragmentStarted(androidx.fragment.app.FragmentManager manager,androidx.fragment.app.Fragment fragment){
+                if(fragment instanceof androidx.fragment.app.DialogFragment){android.app.Dialog dialog=((androidx.fragment.app.DialogFragment)fragment).getDialog();if(dialog!=null){com.github.eka2l1.phone.PhoneDialogs.prepare(dialog);com.github.eka2l1.phone.PhoneDialogs.fit(dialog);}}
+            }
+        },true);
+        android.view.ViewGroup root=findViewById(android.R.id.content);
+        android.view.View browser=root.getChildAt(0);root.removeView(browser);
+        root.addView(com.github.eka2l1.phone.PhoneUi.wrap(this,browser,false));
         extensions = getIntent().getStringArrayExtra(EXTRA_EXTENSIONS);
         if (extensions == null) {
             extensions = new String[0];
         }
     }
+
+    @Override public void onWindowFocusChanged(boolean focused){super.onWindowFocusChanged(focused);if(focused)getWindow().getDecorView().setSystemUiVisibility(5894);}
 
     @Override
     protected AbstractFilePickerFragment<File> getFragment(@Nullable String startPath, int mode, boolean allowMultiple,

@@ -48,7 +48,7 @@ import java.util.Map;
 
 public class MainActivity extends BaseActivity {
 
-    private static final String[] STORAGE_PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    private static final String[] STORAGE_PERMISSIONS = {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
     private final ActivityResultLauncher<String[]> permissionsLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
@@ -65,7 +65,8 @@ public class MainActivity extends BaseActivity {
 
         if (!FileUtils.isExternalStorageLegacy() || ContextCompat.checkSelfPermission(
                 this, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
-                PackageManager.PERMISSION_GRANTED) {
+                PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+                this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             initialize();
         } else {
             permissionsLauncher.launch(STORAGE_PERMISSIONS);
@@ -106,7 +107,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showOpenGLDialog() {
-        new AlertDialog.Builder(this)
+        new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(this)
                 .setTitle(R.string.error)
                 .setCancelable(false)
                 .setMessage(R.string.opengl_required)
@@ -117,7 +118,7 @@ public class MainActivity extends BaseActivity {
     private void showScopedStorageDialog() {
         String message = getString(R.string.scoped_storage_warning) + Emulator.getEmulatorDir()
                 + getString(R.string.scoped_storage_move_hint);
-        new AlertDialog.Builder(this)
+        new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(this)
                 .setTitle(R.string.warning)
                 .setCancelable(false)
                 .setMessage(message)

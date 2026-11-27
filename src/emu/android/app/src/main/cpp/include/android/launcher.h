@@ -35,6 +35,7 @@
 
 #include <string>
 #include <atomic>
+#include <functional>
 #include <mutex>
 
 namespace eka2l1 {
@@ -86,10 +87,11 @@ namespace eka2l1::android {
 
     public:
         explicit launcher(eka2l1::system *sys);
+        void on_system_reset();
 
         std::vector<std::string> get_apps();
         jobject get_app_icon(JNIEnv *env, std::uint32_t uid);
-        void launch_app(std::uint32_t uid);
+        bool launch_app(std::uint32_t uid, std::function<void(kernel::process *)> exited);
         package::installation_result install_app(const eka2l1::host_path &path);
         std::vector<std::string> get_devices();
         std::vector<std::string> get_device_firwmare_codes();

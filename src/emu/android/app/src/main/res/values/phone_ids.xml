@@ -1,0 +1,6 @@
+<resources>
+    <item name="phone_toolbar" type="id" /><item name="phone_shell" type="id" />
+    <item name="action_phone_family" type="id" /><item name="action_phone_orientation" type="id" />
+    <item name="action_phone_install" type="id" />
+    <item name="action_phone_keys" type="id" />
+</resources>

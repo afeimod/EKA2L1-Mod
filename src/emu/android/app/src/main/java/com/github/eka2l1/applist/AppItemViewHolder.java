@@ -46,7 +46,7 @@ public class AppItemViewHolder extends RecyclerView.ViewHolder implements View.O
 
         name.setText(item.getTitle());
         if (uid != null) {
-            uid.setText(String.format("UID: 0x%X", item.getUid()));
+            uid.setText(item.isJavaApp() ? "Java ME" : String.format("UID: 0x%X", item.getUid()));
         }
 
         if (item.getIcon() != null) {
@@ -58,6 +58,11 @@ public class AppItemViewHolder extends RecyclerView.ViewHolder implements View.O
 
     @Override
     public void onClick(View v) {
+        if (item.isJavaApp()) {
+            ru.playsoftware.j2meloader.config.Config.startApp(v.getContext(), item.getTitle(),
+                    item.getJavaAppPath());
+            return;
+        }
         Intent intent = new Intent(v.getContext(), EmulatorActivity.class);
         intent.putExtra(KEY_APP_UID, item.getUid());
         intent.putExtra(KEY_APP_NAME, item.getTitle());

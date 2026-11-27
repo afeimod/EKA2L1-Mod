@@ -275,7 +275,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/textView3"
                 app:layout_constraintWidth_min="wrap" />
 
-            <Spinner
+            <com.github.eka2l1.phone.PhoneSpinner
                 android:id="@+id/spOrientation"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/height_config_row"
@@ -304,7 +304,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/textView4"
                 app:layout_constraintWidth_min="wrap" />
 
-            <Spinner
+            <com.github.eka2l1.phone.PhoneSpinner
                 android:id="@+id/spScreenMode"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/height_config_row"
@@ -329,7 +329,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/tvScreenMode"
                 app:layout_constraintWidth_min="wrap" />
 
-            <Spinner
+            <com.github.eka2l1.phone.PhoneSpinner
                 android:id="@+id/spScreenGravity"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/height_config_row"
@@ -355,7 +355,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/tvScreenGravity"
                 app:layout_constraintWidth_min="wrap" />
 
-            <Spinner
+            <com.github.eka2l1.phone.PhoneSpinner
                 android:id="@+id/spScaleType"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/height_config_row"
@@ -404,7 +404,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/cbShouldUseShaderForUpscale" />
 
-            <Spinner
+            <com.github.eka2l1.phone.PhoneSpinner
                 android:id="@+id/spUpscaleShader"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/height_config_row"
@@ -523,7 +523,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/cbIsShowKeyboard"
                 app:layout_constraintWidth_min="wrap" />
 
-            <Spinner
+            <com.github.eka2l1.phone.PhoneSpinner
                 android:id="@+id/spVKType"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/height_config_row"
@@ -553,7 +553,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/tvVkType"
                 app:layout_constraintWidth_min="wrap" />
 
-            <Spinner
+            <com.github.eka2l1.phone.PhoneSpinner
                 android:id="@+id/spButtonsShape"
                 android:layout_width="0dp"
                 android:layout_height="@dimen/height_config_row"

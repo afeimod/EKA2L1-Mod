@@ -52,8 +52,19 @@ std::unique_ptr<eka2l1::android::emulator> state;
 bool inited = false;
 
 static std::unique_lock<std::recursive_mutex> lock_debug_control() {
-    if (state->debug_backend) return std::unique_lock<std::recursive_mutex>(state->debug_mutex);
-    return {};
+    return std::unique_lock<std::recursive_mutex>(state->debug_mutex);
+}
+
+static bool close_session() {
+    if (!state || !state->symsys) return false;
+    std::lock_guard<std::recursive_mutex> guard(state->debug_mutex);
+    // Invalidate exit callbacks before destroying the guest processes.
+    ++state->session_generation;
+    if (state->debug_backend) state->debug_backend->reset_session();
+    // Server teardown waits for queued GL work; a paused graphics thread must
+    // be able to drain that work even though the Android surface is detached.
+    eka2l1::android::prepare_control_reset(*state);
+    return state->symsys->reset();
 }
 
 static void debug_java_call(const char *method, const char *signature, jlong uid = 0) {
@@ -77,9 +88,7 @@ static void start_debug_control(int port) {
     frontend.can_capture = [] { return s_surf && !state->should_graphics_pause.load(); };
     frontend.launch = [](std::uint32_t uid) { debug_java_call("debugLaunchApp", "(J)V", uid); return true; };
     frontend.close = [] {
-        state->debug_backend->reset_session();
-        android::prepare_control_reset(*state);
-        state->symsys->reset();
+        close_session();
         debug_java_call("debugCloseApp", "()V");
     };
     frontend.boot = [](int index) { debug_java_call("debugCloseApp", "()V"); return android::control_boot_device(*state,index); };
@@ -176,9 +185,13 @@ static void redraw_screens_immediately() {
 extern "C" JNIEXPORT void JNICALL
 Java_com_github_eka2l1_emu_Emulator_launchApp(JNIEnv *env, jclass clazz, jint uid) {
     auto control_guard = lock_debug_control();
+    const auto generation = ++state->session_generation;
+    auto exited = [generation](eka2l1::kernel::process *) {
+        if (generation == state->session_generation.load()) debug_java_call("exitInstance", "()V");
+    };
     if (state->debug_backend) {
-        state->debug_backend->launch_app(uid, [](eka2l1::kernel::process *) { debug_java_call("debugCloseApp", "()V"); });
-    } else state->launcher->launch_app(uid);
+        state->debug_backend->launch_app(uid, exited);
+    } else state->launcher->launch_app(uid, exited);
 }
 
 extern "C" JNIEXPORT void JNICALL
@@ -198,6 +211,8 @@ Java_com_github_eka2l1_emu_Emulator_surfaceChanged(JNIEnv *env, jclass clazz, jo
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_github_eka2l1_emu_Emulator_surfaceRedrawNeeded(JNIEnv *env, jclass clazz) {
+    auto control_guard = lock_debug_control();
+    if (!s_surf) return;
     redraw_screens_immediately();
 }
 
@@ -638,9 +653,10 @@ Java_com_github_eka2l1_emu_EmulatorLocation_onLocationChanged(JNIEnv *env, jclas
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_github_eka2l1_emu_Emulator_debugCloseNative(JNIEnv *, jclass) {
-    if (!state || !state->debug_backend) return;
-    std::lock_guard<std::recursive_mutex> guard(state->debug_mutex);
-    state->debug_backend->reset_session();
-    eka2l1::android::prepare_control_reset(*state);
-    state->symsys->reset();
+    close_session();
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_github_eka2l1_emu_Emulator_closeSessionNative(JNIEnv *, jclass) {
+    return close_session();
 }

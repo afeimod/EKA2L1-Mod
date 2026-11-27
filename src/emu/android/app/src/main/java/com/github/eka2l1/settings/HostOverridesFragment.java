@@ -91,7 +91,7 @@ public class HostOverridesFragment extends PreferenceFragmentCompat {
             name.setText(oldName);
             target.setText(hosts.get(oldName));
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
+        AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(requireContext())
                 .setTitle(R.string.hosts_mapping)
                 .setView(fields)
                 .setPositiveButton(android.R.string.ok, null)

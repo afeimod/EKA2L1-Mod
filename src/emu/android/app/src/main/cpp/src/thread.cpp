@@ -146,10 +146,10 @@ namespace eka2l1::android {
     }
 
     void start_threads(emulator &state) {
-        state.should_emu_pause = false;
-        state.should_graphics_pause = false;
-        state.pause_graphics_sema.notify();
-        state.pause_sema.notify();
+        // Resize callbacks can arrive repeatedly without a pause. Do not leave
+        // spare semaphore signals which would let the next pause run through.
+        if (state.should_graphics_pause.exchange(false)) state.pause_graphics_sema.notify();
+        if (state.should_emu_pause.exchange(false)) state.pause_sema.notify();
 
         if (state.sensor_driver) {
             state.sensor_driver->resume();

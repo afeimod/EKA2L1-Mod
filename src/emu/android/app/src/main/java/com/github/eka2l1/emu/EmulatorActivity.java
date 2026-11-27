@@ -63,6 +63,9 @@ import com.github.eka2l1.config.ConfigActivity;
 import com.github.eka2l1.config.ProfileModel;
 import com.github.eka2l1.config.ProfilesManager;
 import com.github.eka2l1.emu.overlay.FixedKeyboard;
+import com.github.eka2l1.phone.PhoneModel;
+import com.github.eka2l1.phone.PhoneKeyMapActivity;
+import com.github.eka2l1.phone.PhoneShellLayout;
 import com.github.eka2l1.emu.overlay.OverlayView;
 import com.github.eka2l1.emu.overlay.VirtualKeyboard;
 import com.github.eka2l1.settings.AppDataStore;
@@ -87,10 +90,6 @@ import java.util.Objects;
 import java.util.concurrent.Semaphore;
 
 public class EmulatorActivity extends AppCompatActivity {
-    private static final int ORIENTATION_DEFAULT = 0;
-    private static final int ORIENTATION_AUTO = 1;
-    private static final int ORIENTATION_PORTRAIT = 2;
-    private static final int ORIENTATION_LANDSCAPE = 3;
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     private final ActivityResultLauncher<String[]> permissionsLauncher = registerForActivityResult(
@@ -103,6 +102,10 @@ public class EmulatorActivity extends AppCompatActivity {
     private OverlayView overlayView;
     private long uid;
     private boolean launched;
+    private boolean closingSession;
+    private boolean resettingSession;
+    private boolean surfaceAttached;
+    private SurfaceView surfaceView;
     private boolean statusBarEnabled;
     private boolean actionBarEnabled;
     private VirtualKeyboard keyboard;
@@ -112,6 +115,7 @@ public class EmulatorActivity extends AppCompatActivity {
     private SparseIntArray androidToSymbian;
     private ProfileModel params;
     private MenuItem actionScreenshot;
+    private PhoneShellLayout phoneShell;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -128,10 +132,24 @@ public class EmulatorActivity extends AppCompatActivity {
         }
 
         AppDataStore dataStore = AppDataStore.getAndroidStore();
-        setTheme(dataStore.getString(PREF_THEME, "dark"));
+        setTheme(dataStore.getString(PREF_THEME, "light"));
         super.onCreate(savedInstanceState);
+        // Match the launcher's handset orientation before inflating the shell.
+        // Applying it after the first layout produced a visible rotate-then-return
+        // flash when an app was opened from a differently oriented screen.
+        PhoneModel.applyOrientation(this);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_emulator);
         overlayView = findViewById(R.id.overlay);
+        overlayView.setVisibility(View.GONE);
+        phoneShell = findViewById(R.id.emulator_container);
+        phoneShell.setModel(PhoneModel.parse(intent.getStringExtra("phone_shell") != null
+                ? intent.getStringExtra("phone_shell") : AppDataStore.getAndroidStore().getString(PhoneModel.PREF, "N73")));
+        // The handset keys belong to the guest while an app is running. Android
+        // Back opens the contained emulator menu without stealing a game softkey.
+        phoneShell.setKeyListener((code, down) -> {
+            if (!closingSession) Emulator.pressKey(code, down ? 0 : 1);
+        });
 
         String name;
         String deviceCode;
@@ -159,6 +177,10 @@ public class EmulatorActivity extends AppCompatActivity {
             name = intent.getStringExtra(KEY_APP_NAME);
             deviceCode = intent.getStringExtra(KEY_DEVICE_CODE);
         }
+        String normalizedAppName = name == null ? "" : name.toLowerCase(java.util.Locale.ROOT);
+        phoneShell.setNgageGame(intent.getBooleanExtra("ngageGame",
+                normalizedAppName.contains("n-gage") || normalizedAppName.contains("ngage")
+                        || uid == 0x101fd409L));
 
         String uidStr = Long.toHexString(uid).toUpperCase();
         File configDir = new File(Emulator.getConfigsDir(), uidStr);
@@ -185,7 +207,8 @@ public class EmulatorActivity extends AppCompatActivity {
             params = ProfilesManager.loadConfigOrDefault(configDir, defProfile);
         }
 
-        SurfaceView surfaceView = findViewById(R.id.surface_view);
+        surfaceView = findViewById(R.id.surface_view);
+        surfaceView.setZOrderOnTop(true);
         ViewCallbacks callbacks = new ViewCallbacks(surfaceView);
         inputCallbacks = callbacks;
         surfaceView.setFocusableInTouchMode(true);
@@ -202,8 +225,8 @@ public class EmulatorActivity extends AppCompatActivity {
         if (wakelockEnabled) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
-        actionBarEnabled = dataStore.getBoolean(PREF_ACTIONBAR, false);
-        statusBarEnabled = dataStore.getBoolean(PREF_STATUSBAR, false);
+        actionBarEnabled = false;
+        statusBarEnabled = false;
         if (!actionBarEnabled) {
             getSupportActionBar().hide();
         }
@@ -231,29 +254,11 @@ public class EmulatorActivity extends AppCompatActivity {
 
         androidToSymbian = (params.keyMappings != null) ? params.keyMappings : KeyMapper.getDefaultKeyMap();
 
-        if (params.showKeyboard && !ProfilesManager.hidesKeyboardByDefault(configDir, deviceCode)) {
-            setVirtualKeyboard(uidStr);
-        }
-        if (keyboard instanceof FixedKeyboard) {
-            setOrientation(ORIENTATION_PORTRAIT);
-        } else {
-            setOrientation(params.orientation);
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            getWindow().getAttributes().layoutInDisplayCutoutMode =
-                    params.screenShowNotch ?
-                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES :
-                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
-        }
+        com.github.eka2l1.phone.PhoneUi.useDisplayCutout(this);
 
         final boolean hasBackground = ProfilesManager.getBackgroundFile(configDir).exists();
 
-        Emulator.setScreenParams(params.screenBackgroundColor, params.screenScaleRatio,
-                params.screenScaleType, params.screenGravity,
-                hasBackground ? ProfilesManager.getBackgroundPath(configDir.getAbsolutePath()) : "",
-                Math.max(0.0f, Math.min(params.screenBackgroundImageOpacity / 100.0f, 1.0f)),
-                params.screenBackgroundImageKeepAspectRatio);
+        Emulator.setScreenParams(0xff000000, 100, 1, 2, "", 0, true);
     }
 
     @Override
@@ -263,38 +268,18 @@ public class EmulatorActivity extends AppCompatActivity {
             hideSystemUI();
         } else if (inputCallbacks != null) {
             inputCallbacks.releaseKeys();
-        }
-    }
-
-    @SuppressLint("SourceLockedOrientationActivity")
-    private void setOrientation(int orientation) {
-        switch (orientation) {
-            case ORIENTATION_AUTO:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
-                break;
-            case ORIENTATION_PORTRAIT:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
-                break;
-            case ORIENTATION_LANDSCAPE:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-                break;
-            case ORIENTATION_DEFAULT:
-            default:
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-                break;
+            if (phoneShell != null) phoneShell.releaseKeys();
         }
     }
 
     @Override
     public void openOptionsMenu() {
-        if (!actionBarEnabled) {
-            showSystemUI();
-        }
-        super.openOptionsMenu();
+        com.github.eka2l1.phone.PhoneUi.showOptions(this);
     }
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (closingSession) return true;
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (actionBarEnabled) {
                 showExitConfirmation();
@@ -315,7 +300,7 @@ public class EmulatorActivity extends AppCompatActivity {
     }
 
     private void showExitConfirmation() {
-        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+        AlertDialog.Builder alertBuilder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(this);
         alertBuilder.setTitle(R.string.confirmation_required)
                 .setMessage(R.string.force_close_confirmation)
                 .setPositiveButton(android.R.string.ok, (d, w) -> Emulator.exitInstance())
@@ -323,10 +308,43 @@ public class EmulatorActivity extends AppCompatActivity {
         alertBuilder.create().show();
     }
 
+    /** Detach the old frame first; keep the handset visible until reset finishes. */
+    public void closeSession() {
+        if (closingSession || isFinishing()) return;
+        if (phoneShell != null) phoneShell.releaseKeys();
+        if (inputCallbacks != null) inputCallbacks.releaseKeys();
+        closingSession = true;
+        Emulator.closeInputDialog();
+        if (surfaceView != null) surfaceView.setVisibility(View.INVISIBLE);
+        if (!surfaceAttached) resetClosedSession();
+    }
+
+    private void resetClosedSession() {
+        if (resettingSession) return;
+        resettingSession = true;
+        new Thread(() -> {
+            boolean closed = Emulator.closeSessionNative();
+            runOnUiThread(() -> {
+                if (isDestroyed()) return;
+                if (closed) {
+                    Emulator.debugCloseApp();
+                    overridePendingTransition(0, 0);
+                } else {
+                    new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(this)
+                            .setTitle(R.string.error)
+                            .setMessage("游戏状态清理失败，请重启模拟器后重试。")
+                            .setPositiveButton(android.R.string.ok, null).show();
+                }
+            });
+        }, "Close guest session").start();
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.emulator, menu);
+        menu.add(0,R.id.action_phone_orientation,0,"屏幕方向");
+        menu.add(0,R.id.action_phone_keys,1,"机身按键映射");
         if (keyboard != null && !(keyboard instanceof FixedKeyboard)) {
             inflater.inflate(R.menu.emulator_keys, menu);
         } else if (keyboard instanceof FixedKeyboard) {
@@ -343,6 +361,8 @@ public class EmulatorActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
+        if(id==R.id.action_phone_orientation){com.github.eka2l1.phone.PhoneUi.chooseOrientation(this);return true;}
+        if(id==R.id.action_phone_keys){startActivity(new Intent(this, PhoneKeyMapActivity.class));return true;}
         if (id == R.id.action_exit) {
             showExitConfirmation();
         } else if (id == R.id.action_save_log) {
@@ -418,7 +438,7 @@ public class EmulatorActivity extends AppCompatActivity {
     }
 
     private void showSetLayoutDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+        AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(this)
                 .setTitle(R.string.layout_switch)
                 .setSingleChoiceItems(keyboard.getLayoutNames(), -1,
                         (dialogInterface, i) -> keyboard.setLayout(i))
@@ -427,7 +447,7 @@ public class EmulatorActivity extends AppCompatActivity {
     }
 
     private void showHideButtonDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+        AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(this)
                 .setTitle(R.string.hide_buttons)
                 .setMultiChoiceItems(keyboard.getKeyNames(), keyboard.getKeyVisibility(),
                         (dialogInterface, i, b) -> keyboard.setPhoneKeyHidden(i, b))
@@ -436,7 +456,7 @@ public class EmulatorActivity extends AppCompatActivity {
     }
 
     private void showLetterKeysDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+        AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(this)
                 .setTitle(R.string.letter_keys)
                 .setMultiChoiceItems(keyboard.getLetterKeyNames(), keyboard.getLetterKeysShown(),
                         (dialogInterface, i, b) -> keyboard.setLetterKeyShown(i, b))
@@ -573,6 +593,7 @@ public class EmulatorActivity extends AppCompatActivity {
 
         @Override
         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            if (closingSession) return;
             Rect offsetViewBounds = new Rect(0, 0, width, height);
             rootView.offsetDescendantRectToMyCoords(view, offsetViewBounds);
             overlayView.setTargetBounds(offsetViewBounds);
@@ -581,6 +602,7 @@ public class EmulatorActivity extends AppCompatActivity {
             updateScreenSize();
 
             Emulator.surfaceChanged(holder.getSurface(), width, height);
+            surfaceAttached = true;
             if (!launched) {
                 Emulator.launchApp((int) uid);
                 launched = true;
@@ -590,7 +612,9 @@ public class EmulatorActivity extends AppCompatActivity {
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
             releaseKeys();
-            Emulator.surfaceDestroyed();
+            if (surfaceAttached) Emulator.surfaceDestroyed();
+            surfaceAttached = false;
+            if (closingSession) resetClosedSession();
         }
 
         @Override
@@ -605,6 +629,7 @@ public class EmulatorActivity extends AppCompatActivity {
         }
 
         public boolean onKeyDown(int keyCode, KeyEvent event) {
+            if (closingSession) return true;
             int scan = convertAndroidKeyCode(keyCode);
             if (scan == Integer.MAX_VALUE) {
                 return false;
@@ -634,6 +659,7 @@ public class EmulatorActivity extends AppCompatActivity {
         @Override
         @SuppressLint("ClickableViewAccessibility")
         public boolean onTouch(View v, MotionEvent event) {
+            if (closingSession) return true;
             switch (event.getActionMasked()) {
                 case MotionEvent.ACTION_CANCEL:
                     if (keyboard != null) {
@@ -700,7 +726,7 @@ public class EmulatorActivity extends AppCompatActivity {
 
         @Override
         public void surfaceRedrawNeeded(SurfaceHolder surfaceHolder) {
-            Emulator.surfaceRedrawNeeded();
+            if (!closingSession && surfaceAttached) Emulator.surfaceRedrawNeeded();
         }
     }
 }

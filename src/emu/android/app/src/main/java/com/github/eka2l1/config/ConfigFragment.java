@@ -102,7 +102,7 @@ public class ConfigFragment extends Fragment implements View.OnClickListener {
     protected CompoundButton cbShowNotch;
     protected CompoundButton cbUseShaderForUpscale;
     protected CompoundButton cbShowKeyboard;
-    private View rootInputConfig;
+    private ViewGroup rootInputConfig;
     private View groupVkConfig;
     protected CompoundButton cbVKFeedback;
     protected CompoundButton cbTouchInput;
@@ -431,12 +431,15 @@ public class ConfigFragment extends Fragment implements View.OnClickListener {
         }
     }
 
-    // Show the keypad default the emulator will actually use, so saving untouched settings keeps it.
     private ProfileModel loadConfigOrDefault() {
         ProfileModel result = ProfilesManager.loadConfigOrDefault(configDir, defProfile);
-        if (!isProfile && ProfilesManager.hidesKeyboardByDefault(configDir, deviceCode)) {
-            result.showKeyboard = false;
-        }
+        // Host layout is owned by the permanent handset, including old profiles.
+        result.showKeyboard = false;
+        result.screenShowNotch = true;
+        result.screenScaleRatio = 100;
+        result.screenGravity = 1;
+        result.screenScaleType = 1;
+        result.orientation = 0;
         return result;
     }
 
@@ -557,6 +560,22 @@ public class ConfigFragment extends Fragment implements View.OnClickListener {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
             // Disable notch option on older version
             cbShowNotch.setVisibility(View.GONE);
+        }
+        hideLegacyHandsetControls();
+    }
+
+    private void hideLegacyHandsetControls() {
+        // These settings cannot affect a fixed LCD and previously contradicted it.
+        for (int id : new int[]{R.id.cmdScreenBack,R.id.etScreenBack,R.id.cmdScreenBgImg,
+                R.id.cmdScreenViewBgImg,R.id.cmdScreenClearBgImg,R.id.tvScreenBgImgOpacity,
+                R.id.sbScreenBgImgOpacity,R.id.etScreenBgImgOpacityValue,R.id.textView3,
+                R.id.sbScaleRatio,R.id.etScaleRatioValue,R.id.textView4,R.id.spOrientation,
+                R.id.tvScreenGravity,R.id.spScreenGravity,R.id.tvScaleType,R.id.spScaleType,
+                R.id.cbShowNotch,R.id.cbKeepBgImgAspect}) rootContainer.findViewById(id).setVisibility(View.GONE);
+        groupVkConfig.setVisibility(View.GONE);
+        for (int i=0;i<rootInputConfig.getChildCount();i++) {
+            View child=rootInputConfig.getChildAt(i);
+            if(child.getId()!=R.id.tvConfigInputTitle&&child.getId()!=R.id.cbTouchInput&&child.getId()!=R.id.cmdKeyMappings)child.setVisibility(View.GONE);
         }
     }
 
@@ -745,7 +764,8 @@ public class ConfigFragment extends Fragment implements View.OnClickListener {
             }
         };
         int color = parseInt(et.getText().toString().trim(), 16);
-        new AmbilWarnaDialog(getContext(), color | 0xFF000000, colorListener).show();
+        AmbilWarnaDialog picker=new AmbilWarnaDialog(getContext(), color | 0xFF000000, colorListener);
+        com.github.eka2l1.phone.PhoneDialogs.prepare(picker.getDialog());picker.show();
     }
 
     private static class ColorTextWatcher implements TextWatcher {

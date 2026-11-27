@@ -123,6 +123,11 @@ public class DeviceListFragment extends Fragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 Emulator.setCurrentDevice(position, false);
+                String code = Emulator.getDeviceFirmwareCodes()[position];
+                com.github.eka2l1.phone.PhoneModel shell = com.github.eka2l1.phone.PhoneModel.forDevice(
+                        Emulator.getDevices()[position], code, Emulator.isTouchScreenDevice(code));
+                com.github.eka2l1.settings.AppDataStore store = com.github.eka2l1.settings.AppDataStore.getAndroidStore();
+                store.putString(com.github.eka2l1.phone.PhoneModel.PREF, shell.name()); store.save();
                 getParentFragmentManager().setFragmentResult(KEY_RESTART, new Bundle());
             }
 
@@ -133,7 +138,7 @@ public class DeviceListFragment extends Fragment {
 
         Button renameButton = view.findViewById(R.id.bt_rename_device);
         renameButton.setOnClickListener(v -> {
-            AlertDialog.Builder inputNameBuilder = new AlertDialog.Builder(getContext());
+            AlertDialog.Builder inputNameBuilder = new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(getContext());
             inputNameBuilder.setTitle(getString(R.string.enter_new_name));
 
             final EditText inputNameField = new EditText(getContext());
@@ -158,7 +163,7 @@ public class DeviceListFragment extends Fragment {
         });
 
         Button deleteButton = view.findViewById(R.id.bt_delete_device);
-        deleteButton.setOnClickListener(v -> new AlertDialog.Builder(getContext())
+        deleteButton.setOnClickListener(v -> new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(getContext())
                 .setTitle(R.string.delete_device_title)
                 .setMessage(R.string.delete_device_message)
                 .setPositiveButton(R.string.action_context_delete, (dialogInterface, i) -> {
@@ -258,7 +263,7 @@ public class DeviceListFragment extends Fragment {
         }
 
         if (paths.size() > 0) {
-            AlertDialog builder = new AlertDialog.Builder(requireContext())
+            AlertDialog builder = new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(requireContext())
                     .setItems(names.toArray(new String[0]), (dialogInterface, i) -> {
                         tvVPL.setText(paths.get(i));
                         firmwareSet = true;
@@ -307,7 +312,7 @@ public class DeviceListFragment extends Fragment {
             Toast.makeText(getContext(), R.string.error, Toast.LENGTH_SHORT).show();
             return;
         }
-        ProgressDialog dialog = new ProgressDialog(getActivity());
+        ProgressDialog dialog = new com.github.eka2l1.phone.PhoneDialogs.Progress(getActivity());
         dialog.setIndeterminate(true);
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         dialog.setCancelable(false);

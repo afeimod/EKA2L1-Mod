@@ -92,6 +92,7 @@ namespace eka2l1::android {
 
         bool debug_control_enabled = false;
         std::atomic<std::uint64_t> debug_frames{0};
+        std::atomic<std::uint64_t> session_generation{0};
         std::recursive_mutex debug_mutex;
         std::shared_ptr<control::native_backend> debug_backend;
         std::unique_ptr<control::service> debug_service;

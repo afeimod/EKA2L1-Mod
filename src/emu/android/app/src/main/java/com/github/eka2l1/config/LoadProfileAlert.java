@@ -80,7 +80,7 @@ public class LoadProfileAlert extends DialogFragment {
         cbConfig = v.findViewById(R.id.cb_config);
         cbKeyboard = v.findViewById(R.id.cb_keyboard);
         cbBgImg = v.findViewById(R.id.cb_bg_img);
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
+        AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(requireActivity());
         builder.setTitle(R.string.load_profile)
                 .setView(v)
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> {

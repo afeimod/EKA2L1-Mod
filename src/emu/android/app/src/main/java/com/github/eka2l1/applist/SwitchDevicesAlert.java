@@ -40,6 +40,8 @@ import androidx.fragment.app.DialogFragment;
 
 import com.github.eka2l1.R;
 import com.github.eka2l1.emu.Emulator;
+import com.github.eka2l1.phone.PhoneModel;
+import com.github.eka2l1.settings.AppDataStore;
 
 public class SwitchDevicesAlert extends DialogFragment {
     private int currentDeviceIndex;
@@ -69,7 +71,7 @@ public class SwitchDevicesAlert extends DialogFragment {
         listView.setAdapter(adapter);
         listView.setItemChecked(currentDeviceIndex, true);
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
+        AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(requireActivity());
         builder.setTitle(R.string.switch_devices)
                 .setView(v)
                 .setNegativeButton(android.R.string.cancel, null);
@@ -83,6 +85,10 @@ public class SwitchDevicesAlert extends DialogFragment {
                 Toast.makeText(getActivity(), R.string.completed, Toast.LENGTH_SHORT).show();
 
                 Emulator.setCurrentDevice(i, false);
+                String code = Emulator.getDeviceFirmwareCodes()[i];
+                PhoneModel model = PhoneModel.forDevice(Emulator.getDevices()[i], code, Emulator.isTouchScreenDevice(code));
+                AppDataStore store = AppDataStore.getAndroidStore();
+                store.putString(PhoneModel.PREF, model.name()); store.save();
                 getParentFragmentManager().setFragmentResult(KEY_RESTART_IMMEDIATELY, new Bundle());
             }
 

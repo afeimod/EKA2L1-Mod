@@ -89,6 +89,6 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/emu/drivers/resources/defaultbank.hsb" "${ASSETS_DIR}/resources"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/src/emu/drivers/resources/defaultbank.sf2" "${ASSETS_DIR}/resources")
 
-if (${CMAKE_ANDROID_ARCH_ABI} MATCHES "arm64-v8a")
+if (${CMAKE_ANDROID_ARCH_ABI} MATCHES "arm64-v8a|x86_64")
     target_link_options(native-lib PRIVATE "-Wl,-Bsymbolic")
 endif()

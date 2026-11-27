@@ -54,6 +54,7 @@ import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -64,6 +65,9 @@ import com.github.eka2l1.config.ConfigFragment;
 import com.github.eka2l1.config.ProfilesFragment;
 import com.github.eka2l1.emu.Emulator;
 import com.github.eka2l1.emu.EmulatorActivity;
+import com.github.eka2l1.phone.PhoneModel;
+import com.github.eka2l1.phone.PhoneShellLayout;
+import com.github.eka2l1.phone.PhoneHomeScreen;
 import com.github.eka2l1.info.AboutDialogFragment;
 import com.github.eka2l1.settings.AppDataStore;
 import com.github.eka2l1.settings.SettingsFragment;
@@ -111,9 +115,17 @@ public class AppsListFragment extends Fragment {
     private DividerItemDecoration dividerItemDecoration;
     private boolean restartNeeded;
     private AppItem pendingAppItem;
+    private PhoneShellLayout phoneShell;
+    private PhoneHomeScreen phoneScreen;
+    private TextView phonePicker;
+    private PhoneModel selectedShell;
+    private ProgressDialog appsLoadingDialog;
     private final ActivityResultLauncher<String[]> openSisLauncher = registerForActivityResult(
             FileUtils.getFilePicker(),
             this::onSisResult);
+    private final ActivityResultLauncher<String[]> openJavaLauncher = registerForActivityResult(
+            FileUtils.getFilePicker(),
+            this::onJavaResult);
     private final ActivityResultLauncher<Void> openSDCardLauncher = registerForActivityResult(
             FileUtils.getNativeDirPicker(),
             this::onSDCardResult);
@@ -154,14 +166,30 @@ public class AppsListFragment extends Fragment {
 
         rvApplist = view.findViewById(R.id.rv_applist);
         tvEmptyList = view.findViewById(R.id.tv_empty_list);
+        phoneShell = requireActivity().findViewById(R.id.phone_shell);
+        phoneScreen = view.findViewById(R.id.phone_home_screen);
+        phonePicker = view.findViewById(R.id.phone_model_picker);
+        selectedShell = PhoneModel.parse(AppDataStore.getAndroidStore().getString(PhoneModel.PREF, "N73"));
+        phoneShell.setModel(selectedShell);
+        phoneScreen.setAdapter(adapter);
+        phoneScreen.setOptionsAction(() -> requireActivity().openOptionsMenu());
+        phoneScreen.setContextAction(()->{
+            androidx.appcompat.view.menu.MenuBuilder menu=new androidx.appcompat.view.menu.MenuBuilder(requireContext());
+            requireActivity().getMenuInflater().inflate(R.menu.context_appslist,menu);
+            com.github.eka2l1.phone.PhoneUi.showMenu((AppCompatActivity)requireActivity(),menu,this::onContextItemSelected);
+        });
+        phoneShell.setKeyListener((code,down)->{
+            if(isResumed()&&isVisible())phoneScreen.key(code,down);
+            else com.github.eka2l1.phone.PhoneUi.key((AppCompatActivity)requireActivity(),code,down);
+        });
+        phonePicker.setOnClickListener(v -> choosePhone());
+        registerForContextMenu(phoneScreen);
+        updatePhone(false, "正在读取系统…");
 
         registerForContextMenu(rvApplist);
 
-        AppDataStore store = AppDataStore.getAndroidStore();
-        boolean isGrid = store.getBoolean(PREF_GRID_APP_LIST, true);
-
         rvApplist.setAdapter(adapter);
-        setDisplay(view, isGrid);
+        setDisplay(view, true);
 
         adapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
@@ -178,8 +206,67 @@ public class AppsListFragment extends Fragment {
         ActionBar actionBar = ((AppCompatActivity) requireActivity()).getSupportActionBar();
         actionBar.setDisplayHomeAsUpEnabled(false);
         actionBar.setTitle(R.string.app_name);
-        FloatingActionButton fab = view.findViewById(R.id.fab);
-        fab.setOnClickListener(v -> openSisLauncher.launch(new String[]{".sis", ".sisx"}));
+        View fab = view.findViewById(R.id.fab);
+        fab.setOnClickListener(v -> chooseInstallType());
+    }
+
+    private void updatePhone(boolean available, String device) {
+        phoneShell.setModel(selectedShell);
+        phonePicker.setText(selectedShell.title + " · " + selectedShell.platform + "  ▾");
+        phoneScreen.setDevice(selectedShell, device, available);
+    }
+
+    private void choosePhone() {
+        PhoneModel[] models = {PhoneModel.N73,PhoneModel.QD,PhoneModel.N8};
+        String[] labels = new String[models.length];
+        for (int i = 0; i < models.length; i++) labels[i] = models[i].title + " · " + models[i].platform;
+        new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(requireContext()).setTitle("选择机型")
+                .setSingleChoiceItems(labels, java.util.Arrays.asList(models).indexOf(selectedShell.family()), (dialog, index) -> {
+                    dialog.dismiss(); selectedShell = models[index];
+                    AppDataStore store = AppDataStore.getAndroidStore();
+                    store.putString(PhoneModel.PREF, selectedShell.name()); store.save();
+                    PhoneModel.applyOrientation(requireActivity());
+                    if (!Emulator.isInitialized()) { updatePhone(false, "系统未安装"); return; }
+                    String[] names = Emulator.getDevices(), codes = Emulator.getDeviceFirmwareCodes();
+                    boolean[] touch = new boolean[names.length];
+                    for (int i = 0; i < names.length; i++) touch[i] = Emulator.isTouchScreenDevice(codes[i]);
+                    int device = selectedShell.findDevice(names, codes, touch);
+                    if (device < 0) { updatePhone(false, "系统未安装");
+                        new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(requireContext()).setTitle("对应系统未安装")
+                                .setMessage("外观已切换。导入该机型的 ROM / RPKG 后即可显示和运行它的软件。")
+                                .setPositiveButton("导入固件", (d, w) -> switchToDeviceList())
+                                .setNegativeButton("稍后", null).show(); return; }
+                    if (device != Emulator.getCurrentDevice()) { Emulator.setCurrentDevice(device, false); restart(); }
+                    else updatePhone(true, names[device]);
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void syncPhoneToDevice() {
+        String[] names = Emulator.getDevices(), codes = Emulator.getDeviceFirmwareCodes();
+        int id = Emulator.getCurrentDevice();
+        if (id < 0 || id >= names.length) { updatePhone(false, "系统未安装"); return; }
+        PhoneModel actual = PhoneModel.forDevice(names[id], codes[id], Emulator.isTouchScreenDevice(codes[id]));
+        boolean same = actual == selectedShell.family();
+        boolean[] touch = new boolean[names.length];
+        for (int i = 0; i < names.length; i++) touch[i] = Emulator.isTouchScreenDevice(codes[i]);
+        if (!same && selectedShell.findDevice(names, codes, touch) < 0) { updatePhone(false, "系统未安装"); return; }
+        if (!same) { selectedShell = actual; AppDataStore store = AppDataStore.getAndroidStore(); store.putString(PhoneModel.PREF, actual.name()); store.save(); }
+        updatePhone(true, names[id]);
+    }
+
+    private boolean selectDefaultDevice() {
+        AppDataStore store = AppDataStore.getAndroidStore();
+        if (store.getString(PhoneModel.PREF, null) != null) return false;
+        store.putString(PhoneModel.PREF, "N73"); store.save();
+        String[] names = Emulator.getDevices(), codes = Emulator.getDeviceFirmwareCodes();
+        int preferred = -1;
+        for (int i = 0; i < names.length; i++) {
+            if (codes[i].equalsIgnoreCase("RM-409") || names[i].contains("N73")) { preferred = i; break; }
+        }
+        if (preferred >= 0 && preferred != Emulator.getCurrentDevice()) {
+            Emulator.setCurrentDevice(preferred, false); restart(); return true;
+        }
+        return false;
     }
 
     private void setDisplay(View view, boolean isGrid) {
@@ -220,34 +307,41 @@ public class AppsListFragment extends Fragment {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @SuppressLint("CheckResult")
     private void prepareApps() {
-        ProgressDialog dialog = new ProgressDialog(getActivity());
+        ProgressDialog dialog = new com.github.eka2l1.phone.PhoneDialogs.Progress(getActivity());
+        appsLoadingDialog = dialog;
         dialog.setIndeterminate(true);
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         dialog.setCancelable(false);
         dialog.setMessage(getText(R.string.processing));
         dialog.show();
         Single<ArrayList<AppItem>> appsSingle = Emulator.getAppsList();
-        appsSingle.subscribeOn(Schedulers.io())
+        compositeDisposable.add(appsSingle.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeWith(new DisposableSingleObserver<ArrayList<AppItem>>() {
                     @Override
                     public void onSuccess(@NonNull ArrayList<AppItem> appItems) {
+                        if (!isAdded() || getView() == null) return;
+                        if (selectDefaultDevice()) { dialog.cancel(); return; }
+                        appItems.addAll(JavaAppCatalog.readInstalledApps());
                         adapter.setItems(appItems);
+                        syncPhoneToDevice();
                         dialog.cancel();
                     }
 
                     @Override
                     public void onError(@NonNull Throwable e) {
+                        if (!isAdded() || getView() == null) return;
+                        adapter.setItems(new ArrayList<>(JavaAppCatalog.readInstalledApps()));
                         Toast.makeText(getContext(), R.string.no_devices_found, Toast.LENGTH_SHORT).show();
                         dialog.cancel();
 
-                        AlertDialog installDeviceAskDialog = new AlertDialog.Builder(getActivity())
+                        AlertDialog installDeviceAskDialog = new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(getActivity())
                                 .setTitle(R.string.no_device_dialog_title)
                                 .setMessage(R.string.no_device_installed)
                                 .setPositiveButton(R.string.install, (d, id) -> {
                                     d.cancel();
 
-                                    new AlertDialog.Builder(getActivity())
+                                    new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(getActivity())
                                             .setTitle(R.string.choose_installation_type)
                                             .setMessage(R.string.choose_installation_type_instruction)
                                             .setPositiveButton(R.string.rom_or_firmware, (d2, id2) -> {
@@ -262,7 +356,7 @@ public class AppsListFragment extends Fragment {
                                 }).setNegativeButton(android.R.string.cancel, (d, id) -> d.cancel()).create();
                         installDeviceAskDialog.show();
                     }
-                });
+                }));
     }
 
     @Override
@@ -283,6 +377,17 @@ public class AppsListFragment extends Fragment {
         compositeDisposable.clear();
     }
 
+    @Override public void onDestroyView() {
+        compositeDisposable.clear();
+        if (appsLoadingDialog != null) {
+            if (appsLoadingDialog.isShowing()) appsLoadingDialog.dismiss();
+            appsLoadingDialog = null;
+        }
+        if (phoneShell != null) phoneShell.releaseKeys();
+        if (phoneScreen != null) phoneScreen.setAdapter(null);
+        super.onDestroyView();
+    }
+
     private void onSisResult(String path) {
         if (!Emulator.isInitialized()) {
             Toast.makeText(getContext(), R.string.error, Toast.LENGTH_SHORT).show();
@@ -292,6 +397,45 @@ public class AppsListFragment extends Fragment {
             return;
         }
         installApp(path);
+    }
+
+    private void chooseInstallType() {
+        new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(requireContext())
+                .setTitle("安装软件")
+                .setItems(new String[]{"Symbian 软件（SIS/SISX）", "Java 软件（JAR/JAD）"}, (dialog, which) -> {
+                    if (which == 0) openSisLauncher.launch(new String[]{".sis", ".sisx"});
+                    else openJavaLauncher.launch(new String[]{".jar", ".jad"});
+                }).show();
+    }
+
+    private void onJavaResult(String path) {
+        if (path == null || !isAdded()) return;
+        try {
+            // JL-Mod stores its database and converted MIDlets inside EKA2L1's working
+            // directory, so the Java catalog remains available in the same app list.
+            String workDir = JavaAppCatalog.getWorkDirectory();
+            File directory = new File(workDir);
+            if (!directory.isDirectory() && !directory.mkdirs()) {
+                throw new IOException("Cannot create Java ME work directory");
+            }
+            androidx.preference.PreferenceManager.getDefaultSharedPreferences(requireContext())
+                    .edit().putString(ru.playsoftware.j2meloader.util.Constants.PREF_EMULATOR_DIR, workDir)
+                    .apply();
+            ViewModelProvider provider = new ViewModelProvider(requireActivity());
+            ru.playsoftware.j2meloader.applist.AppListModel model =
+                    provider.get(ru.playsoftware.j2meloader.applist.AppListModel.class);
+            model.setEmulatorDirectory(workDir);
+            Uri fileUri = path.startsWith("/") ? Uri.fromFile(new File(path)) : Uri.parse(path);
+            getParentFragmentManager().setFragmentResultListener("jlmod-install-result", this,
+                    (key, result) -> {
+                        prepareApps();
+                    });
+            ru.woesss.j2me.installer.InstallerDialog.newInstance(fileUri)
+                    .show(getParentFragmentManager(), "jlmod-installer");
+        } catch (Exception e) {
+            Log.e("AppsListFragment", "Unable to open Java ME installer", e);
+            Toast.makeText(requireContext(), "无法启动 Java 安装器：" + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void onSDCardResult(String path) {
@@ -391,17 +535,6 @@ public class AppsListFragment extends Fragment {
         }
     }
 
-    private void setToggleGridIconStatus(MenuItem item, boolean isGrid) {
-        item.setChecked(isGrid);
-        if (isGrid) {
-            item.setIcon(R.drawable.ic_list_white);
-            item.setTitle(R.string.list_app_list_mode);
-        } else {
-            item.setIcon(R.drawable.ic_grid_white);
-            item.setTitle(R.string.grid_app_list_mode);
-        }
-    }
-
     @SuppressLint("CheckResult")
     private void extractPreconfiguredPack(String inputPath, String destPath, String destPathTemp) {
         InputStream sourceZipStream;
@@ -413,7 +546,7 @@ public class AppsListFragment extends Fragment {
             return;
         }
 
-        ProgressDialog dialog = new ProgressDialog(getActivity());
+        ProgressDialog dialog = new com.github.eka2l1.phone.PhoneDialogs.Progress(getActivity());
         dialog.setIndeterminate(true);
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         dialog.setCancelable(false);
@@ -473,7 +606,7 @@ public class AppsListFragment extends Fragment {
         File dataFolder = new File(dataFolderPath);
 
         if (dataFolder.exists()) {
-            new AlertDialog.Builder(getContext())
+            new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(getContext())
                     .setTitle(R.string.delete_existing_data_title)
                     .setMessage(R.string.delete_existing_data)
                     .setPositiveButton(android.R.string.yes, (d, i) -> {
@@ -496,6 +629,10 @@ public class AppsListFragment extends Fragment {
     public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.main, menu);
+        menu.add(0,R.id.action_phone_family,0,"机型系列");
+        menu.add(0,R.id.action_phone_orientation,1,"屏幕方向");
+        menu.add(0,R.id.action_phone_install,2,"安装软件");
+        menu.add(0,R.id.action_phone_keys,3,"机身按键映射");
         final MenuItem searchItem = menu.findItem(R.id.action_search);
         SearchView searchView = (SearchView) searchItem.getActionView();
         Disposable searchViewDisposable = Observable.create((ObservableOnSubscribe<String>) emitter -> {
@@ -519,29 +656,19 @@ public class AppsListFragment extends Fragment {
                 .subscribe(charSequence -> adapter.getFilter().filter(charSequence));
         compositeDisposable.add(searchViewDisposable);
 
-        AppDataStore store = AppDataStore.getAndroidStore();
-        boolean isGrid = store.getBoolean(PREF_GRID_APP_LIST, true);
-
-        final MenuItem gridModeItem = menu.findItem(R.id.action_toggle_grid);
-
-        setToggleGridIconStatus(gridModeItem, isGrid);
-        gridModeItem.setOnMenuItemClickListener(item -> {
-            boolean gridEnabled = !item.isChecked();
-
-            store.putBoolean(PREF_GRID_APP_LIST, gridEnabled);
-            store.save();
-
-            setDisplay(null, gridEnabled);
-            setToggleGridIconStatus(item, gridEnabled);
-
-            return true;
-        });
+        menu.removeItem(R.id.action_toggle_grid);
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
-        if (itemId == R.id.action_about) {
+        if (itemId == R.id.action_phone_family) {choosePhone();return true;
+        } else if (itemId == R.id.action_phone_orientation) {com.github.eka2l1.phone.PhoneUi.chooseOrientation(requireActivity());return true;
+        } else if (itemId == R.id.action_phone_keys) {startActivity(new Intent(requireContext(), com.github.eka2l1.phone.PhoneKeyMapActivity.class));return true;
+        } else if (itemId == R.id.action_phone_install) {chooseInstallType();return true;
+        } else if (itemId == R.id.action_search) {
+            com.github.eka2l1.phone.PhoneDialogs.askText(requireActivity(),"搜索软件","",value->adapter.getFilter().filter(value.toLowerCase()));return true;
+        } else if (itemId == R.id.action_about) {
             AboutDialogFragment aboutDialogFragment = new AboutDialogFragment();
             aboutDialogFragment.show(getParentFragmentManager(), "about");
         } else if (itemId == R.id.action_settings) {
@@ -699,6 +826,11 @@ public class AppsListFragment extends Fragment {
         int index = AppItemViewHolder.contextIndex;
         AppItem appItem = adapter.getItem(index);
         if (item.getItemId() == R.id.action_context_settings) {
+            if (appItem.isJavaApp()) {
+                ru.playsoftware.j2meloader.config.Config.openSettings(
+                        requireContext(), appItem.getTitle(), appItem.getJavaAppPath());
+                return true;
+            }
             ConfigFragment configFragment = new ConfigFragment();
             Bundle args = new Bundle();
             args.putLong(KEY_APP_UID, appItem.getUid());

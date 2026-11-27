@@ -44,7 +44,7 @@ public class SpecialThanksDialogFragment extends DialogFragment {
         int paddingHorizontal = (int) (density * 20);
         int paddingVertical = (int) (density * 14);
         tv.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
+        AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(requireActivity());
         builder.setTitle(R.string.about_special_thanks_title)
                 .setIcon(R.mipmap.ic_ducky)
                 .setView(tv)

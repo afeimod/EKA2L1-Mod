@@ -123,9 +123,9 @@ public class ProfileModel {
         screenScaleType = 1;
         screenGravity = 1;
         screenScaleRatio = 100;
-        screenShowNotch = false;
+        screenShowNotch = true;
 
-        showKeyboard = true;
+        showKeyboard = false;
         touchInput = true;
 
         vkButtonShape = VirtualKeyboard.ROUND_RECT_SHAPE;

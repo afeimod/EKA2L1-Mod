@@ -26,12 +26,27 @@ public class AppItem {
     private long extIndex;
     private String title;
     private Bitmap icon;
+    private String javaAppPath;
 
     public AppItem(long uid, long extIndex, String title, Bitmap icon) {
         this.uid = uid;
         this.title = title;
         this.icon = icon;
         this.extIndex = extIndex;
+    }
+
+    public static AppItem javaApp(String title, Bitmap icon, String path) {
+        AppItem item = new AppItem(0, 0, title, icon);
+        item.javaAppPath = path;
+        return item;
+    }
+
+    public boolean isJavaApp() {
+        return javaAppPath != null;
+    }
+
+    public String getJavaAppPath() {
+        return javaAppPath;
     }
 
     public long getUid() {

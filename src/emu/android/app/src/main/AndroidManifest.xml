@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
@@ -21,6 +22,8 @@
         android:required="true" />
 
     <application
+        android:name="ru.playsoftware.j2meloader.EmulatorApplication"
+        tools:replace="android:theme"
         android:allowBackup="false"
         android:hasFragileUserData="true"
         android:icon="@mipmap/ic_ducky"
@@ -44,6 +47,10 @@
         <activity
             android:name=".config.ConfigActivity"
             android:noHistory="true" />
+        <activity
+            android:name=".phone.PhoneKeyMapActivity"
+            android:exported="false"
+            android:label="机身按键映射" />
         <activity
             android:name=".filepicker.FilteredFilePickerActivity"
             android:theme="@style/FilePickerTheme" />

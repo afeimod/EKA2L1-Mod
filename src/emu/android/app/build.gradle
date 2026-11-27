@@ -23,7 +23,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 34
         versionCode 12
-        versionName "0.1.0"
+        versionName "0.1.0-mod"
         ndkVersion = '30.0.16248370'
         buildConfigField "String", "GIT_HASH", "\"${getGitHash()}\""
         ndk {

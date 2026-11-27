@@ -1,4 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="AppTheme.Phone" parent="AppTheme">
+        <item name="windowActionBar">false</item><item name="windowNoTitle">true</item>
+    </style>
+    <style name="AppTheme.Light.Phone" parent="AppTheme.Light">
+        <item name="windowActionBar">false</item><item name="windowNoTitle">true</item>
+    </style>
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat">
         <!-- Customize your theme here. -->
@@ -68,6 +74,8 @@
     </style>
 
     <style name="FilePickerTheme" parent="NNF_BaseTheme">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowIsTranslucent">false</item>
         <item name="colorPrimary">@color/dark_color_primary</item>
         <item name="colorPrimaryDark">@color/dark_color_primary_dark</item>
         <item name="colorAccent">@color/file_picker_accent</item>
@@ -83,6 +91,8 @@
     </style>
 
     <style name="FilePickerTheme.Light" parent="NNF_BaseTheme.Light">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowIsTranslucent">false</item>
         <item name="colorPrimary">@color/light_color_primary</item>
         <item name="colorPrimaryDark">@color/light_color_primary_dark</item>
         <item name="colorAccent">@color/file_picker_accent</item>

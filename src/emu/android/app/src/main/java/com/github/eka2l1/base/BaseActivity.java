@@ -38,13 +38,34 @@ public class BaseActivity extends AppCompatActivity {
         AppDataStore dataStore = AppDataStore.getAndroidStore();
         String theme = dataStore.getString(PREF_THEME, "light");
         if (theme.equals("dark")) {
-            setTheme(R.style.AppTheme);
+            setTheme(R.style.AppTheme_Phone);
         } else {
-            setTheme(R.style.AppTheme_Light);
+            setTheme(R.style.AppTheme_Light_Phone);
         }
         if (getSupportActionBar() != null) {
             getSupportActionBar().setElevation(getResources().getDisplayMetrics().density * 2);
         }
         super.onCreate(savedInstanceState);
+        com.github.eka2l1.phone.PhoneUi.useDisplayCutout(this);
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        com.github.eka2l1.phone.PhoneModel.applyOrientation(this);
+        getSupportFragmentManager().registerFragmentLifecycleCallbacks(new androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks(){
+            @Override public void onFragmentStarted(androidx.fragment.app.FragmentManager manager,androidx.fragment.app.Fragment fragment){
+                if(fragment instanceof androidx.fragment.app.DialogFragment){android.app.Dialog dialog=((androidx.fragment.app.DialogFragment)fragment).getDialog();if(dialog!=null){com.github.eka2l1.phone.PhoneDialogs.prepare(dialog);com.github.eka2l1.phone.PhoneDialogs.fit(dialog);}}
+                if(fragment.getView()!=null)com.github.eka2l1.phone.PhoneDialogs.containInputs(fragment.getView());
+            }
+        },true);
     }
+    @Override protected void onResume() {
+        super.onResume();
+        com.github.eka2l1.phone.PhoneUi.refreshShell(this);
+        com.github.eka2l1.phone.PhoneModel.applyOrientation(this);
+    }
+
+    @Override public void setContentView(int layout) {
+        android.view.View content=getLayoutInflater().inflate(layout,null);
+        super.setContentView(com.github.eka2l1.phone.PhoneUi.wrap(this,content,true));
+    }
+    @Override public void openOptionsMenu(){com.github.eka2l1.phone.PhoneUi.showOptions(this);}
+    @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus)getWindow().getDecorView().setSystemUiVisibility(5894);}
 }

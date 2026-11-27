@@ -97,7 +97,7 @@ public class AndroidSettingsFragment extends PreferenceFragmentCompat {
         updateEmulatorDirSummary(Emulator.getEmulatorDir());
 
         emulatorDirPreference.setOnPreferenceClickListener(preference -> {
-            if (FileUtils.isExternalStorageLegacy()) {
+            if (FileUtils.hasDirectStorageAccess()) {
                 pickEmulatorDirectory.launch(null);
             } else {
                 openPicker();
@@ -201,7 +201,7 @@ public class AndroidSettingsFragment extends PreferenceFragmentCompat {
             Toast.makeText(getContext(), R.string.pref_emulator_dir_cant_change, Toast.LENGTH_SHORT).show();
             return;
         }
-        new AlertDialog.Builder(requireContext())
+        new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(requireContext())
                 .setTitle(R.string.pref_emulator_dir)
                 .setMessage(R.string.pref_emulator_dir_needs_all_files_access)
                 .setPositiveButton(android.R.string.ok, (d, w) -> openAllFilesAccessSettings())
@@ -250,7 +250,7 @@ public class AndroidSettingsFragment extends PreferenceFragmentCompat {
             message = message + "\n\n" + getString(R.string.pref_emulator_dir_move_replaces);
         }
 
-        new AlertDialog.Builder(requireContext())
+        new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(requireContext())
                 .setTitle(R.string.pref_emulator_dir)
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, (d, w) -> moveWorkingDirectory(currentPath, targetPath))
@@ -261,7 +261,7 @@ public class AndroidSettingsFragment extends PreferenceFragmentCompat {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @SuppressLint("CheckResult")
     private void moveWorkingDirectory(String currentPath, String targetPath) {
-        ProgressDialog dialog = new ProgressDialog(getActivity());
+        ProgressDialog dialog = new com.github.eka2l1.phone.PhoneDialogs.Progress(getActivity());
         dialog.setIndeterminate(true);
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         dialog.setCancelable(false);

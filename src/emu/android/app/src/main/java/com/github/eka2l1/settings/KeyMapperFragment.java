@@ -126,7 +126,7 @@ public class KeyMapperFragment extends Fragment implements View.OnClickListener 
         if (id >= 0) {
             keyName = KeyEvent.keyCodeToString(androidToSymbian.keyAt(id));
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext())
+        AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(requireContext())
                 .setTitle(R.string.mapping_dialog_title)
                 .setMessage(getString(R.string.mapping_dialog_message, keyName))
                 .setOnKeyListener((dialog, keyCode, event) -> {

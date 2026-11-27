@@ -61,6 +61,14 @@ public class PackageListFragment extends ListFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         registerForContextMenu(getListView());
+        getListView().setOnItemLongClickListener((parent,item,position,id)->{
+            androidx.appcompat.view.menu.MenuBuilder menu=new androidx.appcompat.view.menu.MenuBuilder(requireContext());
+            menu.setCurrentMenuInfo(new android.widget.AdapterView.AdapterContextMenuInfo(item,position,id));
+            requireActivity().getMenuInflater().inflate(R.menu.context_packagelist,menu);
+            com.github.eka2l1.phone.PhoneUi.showMenu((AppCompatActivity)requireActivity(),menu,selected->{
+                return onContextItemSelected(selected);
+            });return true;
+        });
         setHasOptionsMenu(true);
         setListAdapter(adapter);
         preparePackages();

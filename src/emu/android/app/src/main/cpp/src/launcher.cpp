@@ -60,6 +60,21 @@ namespace eka2l1::android {
         , background_img_(0)
         , background_img_opacity_(0.0f)
         , keep_bg_aspect_(true) {
+        set_screen_params(0xff000000, 100, 1, 2, host_path{}, 0.0f, true);
+        retrieve_servers();
+    }
+
+    void launcher::on_system_reset() {
+        // Keep the launcher alive: set_current_device() can trigger this callback
+        // while one of its own member functions is still on the stack.
+        input_complete_callback_ = nullptr;
+        {
+            const std::lock_guard<std::mutex> guard(question_dialog_mutex_);
+            if (question_dialog_) question_dialog_->finished = true;
+            question_dialog_.reset();
+        }
+        screenshot_buffer_.clear();
+        kern = sys->get_kernel_system();
         retrieve_servers();
     }
 
@@ -85,13 +100,15 @@ namespace eka2l1::android {
         std::vector<apa_app_registry> &registerations = alserv->get_registerations();
         std::vector<std::string> info;
         for (auto &reg : registerations) {
+            // The handset launcher must expose ROM-provided applications. The
+            // desktop "hide system apps" preference used to hide much of the
+            // built-in catalog on newer Android versions. Keep only the guest's
+            // explicit hidden bit for this phone-facing list.
             if (!reg.caps.is_hidden) {
-                if (!conf || (conf && (!conf->hide_system_apps || (conf->hide_system_apps && !is_reg_entry_probably_system_app(reg))))) {
-                    std::string name = common::ucs2_to_utf8(reg.mandatory_info.long_caption.to_std_string(nullptr));
-                    std::string uid = std::to_string(reg.mandatory_info.uid);
-                    info.push_back(uid);
-                    info.push_back(name);
-                }
+                std::string name = common::ucs2_to_utf8(reg.mandatory_info.long_caption.to_std_string(nullptr));
+                std::string uid = std::to_string(reg.mandatory_info.uid);
+                info.push_back(uid);
+                info.push_back(name);
             }
         }
         return info;
@@ -132,28 +149,31 @@ namespace eka2l1::android {
         }
         const std::size_t row_bytes = static_cast<std::size_t>(icon->size.x) * 4;
         for (std::int32_t y = 0; y < icon->size.y; ++y) {
-            std::memcpy(static_cast<std::uint8_t *>(pixels) + y * info.stride,
-                icon->pixels.data() + y * row_bytes, row_bytes);
+            auto *dst = static_cast<std::uint8_t *>(pixels) + y * info.stride;
+            std::memcpy(dst, icon->pixels.data() + y * row_bytes, row_bytes);
+            // Some ROM masks leave the visible icon partially transparent.
+            // Preserve transparent padding but make visible pixels opaque so
+            // the first home-screen tile cannot inherit a washed-out alpha.
+            for (std::int32_t x = 0; x < icon->size.x; ++x) {
+                auto *pixel = dst + x * 4;
+                if (pixel[3] != 0) pixel[3] = 0xff;
+            }
         }
         AndroidBitmap_unlockPixels(env, bitmap);
         return bitmap;
     }
 
-    void launcher::launch_app(std::uint32_t uid) {
-        apa_app_registry *reg = alserv->get_registration(uid);
+    bool launcher::launch_app(std::uint32_t uid, std::function<void(kernel::process *)> exited) {
+        apa_app_registry *reg = alserv ? alserv->get_registration(uid) : nullptr;
+        if (!reg) return false;
 
         epoc::apa::command_line cmdline;
 
         kern->lock();
-        alserv->launch_app(*reg, cmdline, nullptr, [&](kernel::process *pr) {
-            JNIEnv *env = common::jni::environment();
-            jclass clazz = common::jni::find_class("com/github/eka2l1/emu/Emulator");
-            jmethodID exit_method = env->GetStaticMethodID(clazz, "exitInstance", "()V");
-
-            env->CallStaticVoidMethod(clazz, exit_method);
-        });
+        const bool launched = alserv->launch_app(*reg, cmdline, nullptr, std::move(exited));
 
         kern->unlock();
+        return launched;
     }
 
     package::installation_result launcher::install_app(const eka2l1::host_path &path) {
@@ -205,7 +225,9 @@ namespace eka2l1::android {
         device_manager *dvc_mngr = sys->get_device_manager();
         auto &dvcs = dvc_mngr->get_devices();
 
-        if (conf->device != id) {
+        if (id >= dvcs.size()) return;
+        const std::uint32_t current = temporary ? dvc_mngr->get_current_index() : conf->device;
+        if (current != id) {
             // Check if the language currently in config exists in the new device
             if (std::find(dvcs[id].languages.begin(), dvcs[id].languages.end(), conf->language) == dvcs[id].languages.end()) {
                 set_language_current(static_cast<language>(dvcs[id].default_language_code));

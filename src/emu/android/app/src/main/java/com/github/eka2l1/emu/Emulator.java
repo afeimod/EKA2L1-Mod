@@ -183,7 +183,9 @@ public class Emulator {
     public static void initializePath(Context context) {
         Emulator.context = context;
 
-        final String defaultEmulatorDir = FileUtils.isExternalStorageLegacy()
+        final String defaultEmulatorDir = BuildConfig.DEBUG
+                ? context.getExternalFilesDir(null).getPath() + "/"
+                : FileUtils.isExternalStorageLegacy()
                 ? Environment.getExternalStorageDirectory() + "/EKA2L1/"
                 : context.getExternalFilesDir(null).getPath() + "/";
 
@@ -660,7 +662,7 @@ public class Emulator {
                 int paddingVertical = (int) (density * 16);
                 int paddingHorizontal = (int) (density * 8);
                 editText.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
-                AlertDialog.Builder builder = new AlertDialog.Builder(context)
+                AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(context)
                         .setTitle(R.string.enter_text)
                         .setView(linearLayout)
                         .setPositiveButton(android.R.string.ok, (dialogInterface, i) -> {
@@ -700,7 +702,7 @@ public class Emulator {
 
                 linearLayout.addView(textView, params);
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(context)
+                AlertDialog.Builder builder = new com.github.eka2l1.phone.PhoneDialogs.SupportBuilder(context)
                         .setTitle(R.string.notify_dialog_title)
                         .setView(linearLayout);
 
@@ -750,9 +752,15 @@ public class Emulator {
     private static native void debugCloseNative();
 
     public static void exitInstance() {
-        if (isDebugControlEnabled()) { debugCloseNative(); debugCloseApp(); return; }
-        Process.killProcess(Process.myPid());
+        // Guest exit callbacks run on the emulation thread. Resetting the core
+        // there would re-enter the kernel while it is still destroying a process.
+        new Handler(Looper.getMainLooper()).post(() -> {
+            Activity screen = debugScreen.get();
+            if (screen instanceof EmulatorActivity) ((EmulatorActivity) screen).closeSession();
+        });
     }
+
+    static native boolean closeSessionNative();
 
     @SuppressLint("unused")
     public static void prepareAudioRecord() throws InterruptedException {

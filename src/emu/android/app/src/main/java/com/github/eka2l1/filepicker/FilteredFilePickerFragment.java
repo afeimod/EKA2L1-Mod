@@ -97,11 +97,12 @@ public class FilteredFilePickerFragment extends FilePickerFragment {
 
     @Override
     protected boolean isItemVisible(final File file) {
-        if (!isDir(file) && (mode == MODE_FILE || mode == MODE_FILE_AND_DIR)) {
+        if (file.isDirectory()) return true;
+        if (mode == MODE_FILE || mode == MODE_FILE_AND_DIR) {
             String ext = getExtension(file);
-            return ext != null && extList.contains(ext.toLowerCase());
+            return extList == null || extList.isEmpty() || (ext != null && extList.contains(ext.toLowerCase(java.util.Locale.ROOT)));
         }
-        return isDir(file);
+        return false;
     }
 
     @Override

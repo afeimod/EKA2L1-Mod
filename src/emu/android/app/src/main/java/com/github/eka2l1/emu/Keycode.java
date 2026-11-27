@@ -40,11 +40,17 @@ public class Keycode {
     public static final int KEY_FIRE = 0xA7;
     public static final int KEY_SOFT_LEFT = 0xA4;
     public static final int KEY_SOFT_RIGHT = 0xA5;
+    public static final int KEY_MENU = 0x94;
     public static final int KEY_CLEAR = 0x01;
     public static final int KEY_SEND = 10;
     public static final int KEY_CALL = 0xB4;
     public static final int KEY_END = 0xB5;
     public static final int KEY_EDIT = 0x12;
+    public static final int KEY_MEDIA_PLAY = 0x9C;
+    public static final int KEY_MEDIA_STOP = 0x9D;
+    public static final int KEY_VOLUME_UP = 0xA2;
+    public static final int KEY_VOLUME_DOWN = 0xA3;
     public static final int KEY_A = 'A';
+    public static final int KEY_B = 'B';
     public static final int KEY_SPACE = 0x05;
 }

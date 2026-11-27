@@ -312,7 +312,7 @@ public class FileUtils {
     }
 
     public static ActivityResultContract<String[],String> getFilePicker() {
-        if (isExternalStorageLegacy()) {
+        if (hasDirectStorageAccess()) {
             return new PickFileResultContract();
         } else {
             return new SAFFileResultContract();
@@ -320,7 +320,7 @@ public class FileUtils {
     }
 
     public static ActivityResultContract<Void,String> getDirPicker() {
-        if (isExternalStorageLegacy()) {
+        if (hasDirectStorageAccess()) {
             return new PickDirResultContract();
         } else {
             return new SAFDirResultContract();
@@ -328,7 +328,7 @@ public class FileUtils {
     }
 
     public static ActivityResultContract<Void,String> getDirPicker(boolean returnsRawPath) {
-        if (isExternalStorageLegacy()) {
+        if (hasDirectStorageAccess()) {
             return new PickDirResultContract();
         } else {
             return new SAFDirResultContract(returnsRawPath);
