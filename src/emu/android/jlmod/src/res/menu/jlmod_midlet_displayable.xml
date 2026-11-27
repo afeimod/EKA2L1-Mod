@@ -1,0 +1,49 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_exit_midlet"
+        android:title="@string/jlmod_exit" />
+    <item
+        android:id="@+id/action_save_log"
+        android:title="@string/jlmod_save_log" />
+    <item
+        android:id="@+id/action_lock_orientation"
+        android:title="@string/jlmod_action_lock_orientation"
+        android:checkable="true"
+        android:checked="false" />
+    <group android:id="@+id/action_group_canvas">
+        <item
+            android:icon="@drawable/jlmod_ic_action_keyboard"
+            android:id="@+id/action_ime_keyboard"
+            android:title="@string/jlmod_action_keyboard_ime" />
+        <item
+            android:icon="@drawable/jlmod_ic_action_screenshot"
+            android:id="@+id/action_take_screenshot"
+            android:title="@string/jlmod_take_screenshot" />
+
+        <item
+            android:id="@+id/action_limit_fps"
+            android:title="@string/jlmod_PREF_LIMIT_FPS" />
+
+        <item
+            android:id="@+id/action_submenu_vk"
+            android:title="@string/jlmod_PREF_VIRTUAL_KEYBOARD_OPTIONS">
+            <menu>
+                <item
+                    android:id="@+id/action_layout_edit_mode"
+                    android:title="@string/jlmod_layout_edit_mode" />
+                <item
+                    android:id="@+id/action_layout_scale_mode"
+                    android:title="@string/jlmod_layout_scale_mode" />
+                <item
+                    android:id="@+id/action_layout_edit_finish"
+                    android:title="@string/jlmod_layout_edit_finish" />
+                <item
+                    android:id="@+id/action_layout_switch"
+                    android:title="@string/jlmod_layout_switch" />
+                <item
+                    android:id="@+id/action_hide_buttons"
+                    android:title="@string/jlmod_hide_buttons" />
+            </menu>
+        </item>
+    </group>
+</menu>

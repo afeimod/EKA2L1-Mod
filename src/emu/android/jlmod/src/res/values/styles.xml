@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="jlmod_AppTheme" parent="Theme.AppCompat.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/jlmod_primary</item>
+        <item name="colorPrimaryDark">@color/jlmod_primary_dark</item>
+        <item name="colorAccent">@color/jlmod_accent</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+        <item name="android:navigationBarColor" tools:targetApi="lollipop">@color/jlmod_primary</item>
+        <item name="android:colorBackground">@color/jlmod_background</item>
+        <item name="android:windowBackground">?android:colorBackground</item>
+        <item name="buttonStyle">@style/jlmod_ButtonStyle</item>
+        <item name="jlmod_bg_config_card">@drawable/jlmod_bg_config_card</item>
+        <item name="jlmod_textColorPrimary">@color/jlmod_text_primary</item>
+        <item name="jlmod_textColorSecondary">@color/jlmod_text_secondary</item>
+        <!-- The host app defines these shared theme attrs; provide JL-Mod
+             values too because some library views resolve them through the host R table. -->
+        <item name="bg_config_card">@drawable/jlmod_bg_config_card</item>
+        <item name="bg_button">@drawable/jlmod_bg_button</item>
+        <item name="textColorPrimary">@color/jlmod_text_primary</item>
+        <item name="textColorSecondary">@color/jlmod_text_secondary</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+    </style>
+
+    <style name="jlmod_AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+    <style name="jlmod_AppTheme.Phone" parent="jlmod_AppTheme">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="jlmod_FilePickerTheme" parent="Theme.AppCompat.DayNight.DialogWhenLarge">
+        <item name="colorPrimary">@color/jlmod_primary</item>
+        <item name="colorPrimaryDark">@color/jlmod_primary_dark</item>
+        <item name="colorAccent">@color/jlmod_file_picker_accent</item>
+        <item name="android:colorBackground">@color/jlmod_background</item>
+        <item name="android:windowBackground">@color/jlmod_background</item>
+        <item name="nnf_toolbarTheme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
+        <item name="alertDialogTheme">@style/jlmod_FilePickerAlertDialogTheme</item>
+        <item name="nnf_separator_color">@color/jlmod_nnf_separator_color</item>
+        <item name="nnf_save_icon_color">?attr/colorAccent</item>
+        <item name="nnf_dir_icon_color">?attr/colorAccent</item>
+        <item name="nnf_list_item_divider">?attr/dividerHorizontal</item>
+
+        <!-- These are important. Handled by toolbar. -->
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+    </style>
+
+    <style name="jlmod_FilePickerAlertDialogTheme" parent="Theme.AppCompat.DayNight.Dialog.Alert">
+        <item name="colorAccent">@color/jlmod_file_picker_accent</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+    </style>
+
+    <style name="jlmod_ConfigTitleTextStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">?attr/jlmod_textColorPrimary</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="jlmod_SwitchStyle">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">?attr/jlmod_textColorSecondary</item>
+    </style>
+
+    <style name="jlmod_EditTextStyle">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColorHint">#b0b0b0</item>
+        <item name="android:textColor">?attr/jlmod_textColorPrimary</item>
+    </style>
+
+    <style name="jlmod_ButtonStyle" parent="Widget.AppCompat.Button.Colored">
+        <item name="elevation">1dp</item>
+        <item name="android:background">@drawable/jlmod_bg_button</item>
+    </style>
+
+    <style name="jlmod_ImageButtonStyle" parent="Widget.AppCompat.ImageButton">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:tint">?colorAccent</item>
+    </style>
+
+    <style name="jlmod_TextViewVendor" parent="Widget.AppCompat.TextView" />
+
+</resources>

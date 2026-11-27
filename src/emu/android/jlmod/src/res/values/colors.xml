@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="jlmod_ic_launcher_background">#4D8A99</color>
+    <color name="jlmod_fab_material_red_500">#f44336</color>
+    <color name="jlmod_file_picker_accent">#ffb62e</color>
+
+    <!--light theme colors-->
+    <color name="jlmod_primary">#212121</color>
+    <color name="jlmod_primary_dark">#1c1c1c</color>
+    <color name="jlmod_accent">#ff2e51</color>
+    <color name="jlmod_background">#fafafa</color>
+    <color name="jlmod_text_primary">#000000</color>
+    <color name="jlmod_text_secondary">#353535</color>
+    <color name="jlmod_btn_bg_normal">#2e2e2e</color>
+    <color name="jlmod_btn_bg_pressed">#707070</color>
+    <color name="jlmod_config_card">#ffffff</color>
+
+    <color name="jlmod_nnf_separator_color">@color/nnf_light_separator_color</color>
+</resources>

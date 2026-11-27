@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="jlmod_textColorPrimary" format="color" />
+    <attr name="jlmod_textColorSecondary" format="color" />
+    <attr name="jlmod_bg_config_card" format="reference" />
+    <attr name="jlmod_bg_button" format="reference" />
+    <attr name="jlmod_nnf_separator_color" format="color" />
+</resources>

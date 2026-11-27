@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="jlmod_about">Om</string>
+    <string name="jlmod_action_context_delete">Radera</string>
+    <string name="jlmod_action_settings">Inställningar</string>
+    <string name="jlmod_CANCEL_CMD">Avbryt</string>
+    <string name="jlmod_close">Stäng</string>
+    <string name="jlmod_donate">Donera</string>
+    <string name="jlmod_exit">Avsluta</string>
+    <string name="jlmod_help">Hjälp</string>
+    <string name="jlmod_licenses">Licenser</string>
+    <string name="jlmod_more">Mer</string>
+    <string name="jlmod_pref_app_sort_date">Datum</string>
+    <string name="jlmod_pref_app_sort_name">Namn</string>
+    <string name="jlmod_PREF_BACKGROUND">Bakgrund</string>
+    <string name="jlmod_pref_orientation_default">Standard</string>
+    <string name="jlmod_PREF_SHOW_FPS">Visa FPS</string>
+    <string name="jlmod_pref_theme_title">Tema</string>
+    <string name="jlmod_profiles">Mallar</string>
+    <string name="jlmod_report_crash">Skicka</string>
+    <string name="jlmod_search">Sök</string>
+</resources>

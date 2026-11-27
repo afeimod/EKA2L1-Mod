@@ -1,0 +1,31 @@
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'ru.playsoftware.j2meloader.dexlib'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 21
+        buildConfigField 'int', 'VERSION_CODE', '1'
+    }
+
+    buildFeatures { buildConfig true }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile '../jlmod/dexlib-src/AndroidManifest.xml'
+            java.srcDirs = ['../jlmod/dexlib-src/java']
+            assets.srcDirs = ['../jlmod/dexlib-src/assets']
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: '../jlmod/dexlib-src/libs', include: ['*.jar'])
+    api 'net.lingala.zip4j:zip4j:2.11.5'
+    implementation 'org.ow2.asm:asm:9.6'
+}

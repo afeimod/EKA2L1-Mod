@@ -17,6 +17,7 @@ out
 .metadata
 cmake-build-*
 .idea
+.local/
 
 # Emulator log written by any binary that calls log::setup_log (including the
 # dyncom differential test harness).

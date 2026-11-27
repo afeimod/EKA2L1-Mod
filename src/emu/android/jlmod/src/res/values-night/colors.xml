@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--dark theme colors-->
+    <color name="jlmod_primary">#262e37</color>
+    <color name="jlmod_primary_dark">#20272f</color>
+    <color name="jlmod_accent">#0099ff</color>
+    <color name="jlmod_background">#000000</color>
+    <color name="jlmod_text_primary">#ffffff</color>
+    <color name="jlmod_text_secondary">#dedede</color>
+    <color name="jlmod_btn_bg_normal">#0099ff</color>
+    <color name="jlmod_btn_bg_pressed">#005D8C</color>
+    <color name="jlmod_config_card">#262e37</color>
+
+    <color name="jlmod_nnf_separator_color">@color/nnf_dark_separator_color</color>
+</resources>

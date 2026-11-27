@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="jlmod_about">පිලිබඳව</string>
+    <string name="jlmod_action_settings">සැකසුම්</string>
+    <string name="jlmod_CANCEL_CMD">අවලංගු කරන්න</string>
+    <string name="jlmod_close">වසන්න</string>
+    <string name="jlmod_exit">පිටවන්න</string>
+    <string name="jlmod_help">උපකාර</string>
+    <string name="jlmod_licenses">බලපත්‍ර</string>
+    <string name="jlmod_more">තව</string>
+    <string name="jlmod_profiles">පැතිකඩයන්</string>
+    <string name="jlmod_search">සොයන්න</string>
+    <string name="jlmod_version">අනුවාදය: </string>
+</resources>
