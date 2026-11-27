@@ -1,2 +1,2 @@
-include ':app'
+include ':app', ':jlmod', ':jlmod-dexlib'
 rootProject.name = "EKA2L1"
