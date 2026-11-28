@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools">
     <ListPreference
         android:defaultValue="@string/jlmod_pref_theme_default"
-        android:entries="@array/pref_theme_entries"
-        android:entryValues="@array/pref_theme_values"
+        android:entries="@array/jlmod_pref_theme_entries"
+        android:entryValues="@array/jlmod_pref_theme_values"
         android:icon="@drawable/jlmod_ic_setting_theme"
         android:key="pref_theme"
         app:useSimpleSummaryProvider="true"
