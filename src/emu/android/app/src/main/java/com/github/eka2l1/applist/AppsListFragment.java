@@ -136,6 +136,7 @@ public class AppsListFragment extends Fragment {
     private final ActivityResultLauncher<String[]> openPreconfiguredPackZIPLauncher = registerForActivityResult(
             FileUtils.getFilePicker(),
             this::onPreconfiguredPackZIPResult);
+    private boolean filePickerInProgress;
     private final ActivityResultLauncher pickLaunchFileDirectory = registerForActivityResult(
             FileUtils.getDirPicker(true),
             this::onLaunchFileDirPickResult);
@@ -144,6 +145,8 @@ public class AppsListFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        filePickerInProgress = savedInstanceState != null
+                && savedInstanceState.getBoolean("filePickerInProgress", false);
         adapter = new AppsListAdapter(getContext());
         compositeDisposable = new CompositeDisposable();
         getParentFragmentManager().setFragmentResultListener(KEY_RESTART, this, (key, bundle) -> {
@@ -153,6 +156,12 @@ public class AppsListFragment extends Fragment {
             restart();
         });
 
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("filePickerInProgress", filePickerInProgress);
     }
 
     @Override
@@ -389,6 +398,7 @@ public class AppsListFragment extends Fragment {
     }
 
     private void onSisResult(String path) {
+        filePickerInProgress = false;
         if (!Emulator.isInitialized()) {
             Toast.makeText(getContext(), R.string.error, Toast.LENGTH_SHORT).show();
             return;
@@ -399,16 +409,30 @@ public class AppsListFragment extends Fragment {
         installApp(path);
     }
 
+    private void launchFilePicker(ActivityResultLauncher<String[]> launcher, String[] extensions) {
+        if (filePickerInProgress) {
+            return;
+        }
+        filePickerInProgress = true;
+        try {
+            launcher.launch(extensions);
+        } catch (RuntimeException e) {
+            filePickerInProgress = false;
+            throw e;
+        }
+    }
+
     private void chooseInstallType() {
         new com.github.eka2l1.phone.PhoneDialogs.PlatformBuilder(requireContext())
                 .setTitle("安装软件")
                 .setItems(new String[]{"Symbian 软件（SIS/SISX）", "Java 软件（JAR/JAD）"}, (dialog, which) -> {
-                    if (which == 0) openSisLauncher.launch(new String[]{".sis", ".sisx"});
-                    else openJavaLauncher.launch(new String[]{".jar", ".jad"});
+                    if (which == 0) launchFilePicker(openSisLauncher, new String[]{".sis", ".sisx"});
+                    else launchFilePicker(openJavaLauncher, new String[]{".jar", ".jad"});
                 }).show();
     }
 
     private void onJavaResult(String path) {
+        filePickerInProgress = false;
         if (path == null || !isAdded()) return;
         try {
             // JL-Mod stores its database and converted MIDlets inside EKA2L1's working
@@ -596,6 +620,7 @@ public class AppsListFragment extends Fragment {
     }
 
     private void onPreconfiguredPackZIPResult(String sourcePath) {
+        filePickerInProgress = false;
         if (sourcePath == null) {
             return;
         }
@@ -622,7 +647,7 @@ public class AppsListFragment extends Fragment {
     }
 
     private void openPreconfiguredZIPFilePicker() {
-        openPreconfiguredPackZIPLauncher.launch(new String[] { "*.zip" });
+        launchFilePicker(openPreconfiguredPackZIPLauncher, new String[] { "*.zip" });
     }
 
     @Override
@@ -705,6 +730,7 @@ public class AppsListFragment extends Fragment {
             openNGageGameLauncher.launch(null);
         } else if (itemId == R.id.action_install_preconfigured_pack) {
             openPreconfiguredZIPFilePicker();
+            return true;
         } else if (itemId == R.id.action_switch_devices) {
             SwitchDevicesAlert.newInstance()
                     .show(getParentFragmentManager(), "alert_switch_devices");
