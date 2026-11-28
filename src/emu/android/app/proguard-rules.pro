@@ -26,6 +26,9 @@
 -keep class com.github.eka2l1.emu.TlsTrust { *; }
 -keep class com.github.eka2l1.util.SparseIntArrayAdapter { *; }
 
+# MIDlet classes are linked by name from converted game DEX files at runtime.
+-keep class javax.microedition.** { *; }
+
 # Inflated by name from res/xml/preferences_android.xml
 -keep class com.github.eka2l1.settings.LongClickPreference {
   <init>(android.content.Context, android.util.AttributeSet);
