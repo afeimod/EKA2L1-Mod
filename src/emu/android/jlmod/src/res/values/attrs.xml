@@ -5,6 +5,7 @@
     <attr name="jlmod_bg_config_card" format="reference" />
     <attr name="jlmod_bg_button" format="reference" />
     <attr name="jlmod_nnf_separator_color" format="color" />
+    <!-- Theme attributes consumed by JL-Mod and the file picker at runtime. -->
     <attr name="bg_config_card" format="reference" />
     <attr name="bg_button" format="reference" />
     <attr name="textColorPrimary" format="color" />

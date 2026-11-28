@@ -15,5 +15,5 @@
     <color name="jlmod_btn_bg_pressed">#707070</color>
     <color name="jlmod_config_card">#ffffff</color>
 
-    <color name="jlmod_nnf_separator_color">@color/nnf_light_separator_color</color>
+    <color name="jlmod_nnf_separator_color">#1f000000</color>
 </resources>

@@ -1,2 +1,6 @@
-include ':app', ':jlmod', ':jlmod-dexlib'
+include ':app'
+include ':jlmod'
+include ':jlmod-dexlib'
+project(':jlmod').projectDir = file('jlmod')
+project(':jlmod-dexlib').projectDir = file('jlmod-dexlib')
 rootProject.name = "EKA2L1"
