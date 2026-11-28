@@ -34,13 +34,13 @@ import androidx.core.content.ContextCompat;
 import androidx.loader.content.AsyncTaskLoader;
 import androidx.loader.content.Loader;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.SortedList;
 
 import com.nononsenseapps.filepicker.AbstractFilePickerFragment;
 import com.nononsenseapps.filepicker.LogicHandler;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
@@ -195,7 +195,7 @@ public class FilteredFilePickerFragment extends AbstractFilePickerFragment<File>
 
 	@NonNull
 	@Override
-	public Loader<List<File>> getLoader() {
+	public Loader<SortedList<File>> getLoader() {
 		return new FileAsyncTaskLoader(requireContext(), mCurrentPath, this::isItemVisible);
 	}
 
@@ -249,7 +249,7 @@ public class FilteredFilePickerFragment extends AbstractFilePickerFragment<File>
 		}
 	}
 
-	private static class FileAsyncTaskLoader extends AsyncTaskLoader<List<File>> {
+	private static class FileAsyncTaskLoader extends AsyncTaskLoader<SortedList<File>> {
 		private final FileFilter fileFilter;
 		private final File path;
 
@@ -265,8 +265,42 @@ public class FilteredFilePickerFragment extends AbstractFilePickerFragment<File>
 		}
 
 		@Override
-		public List<File> loadInBackground() {
-			List<File> fileList = new ArrayList<>();
+		public SortedList<File> loadInBackground() {
+			SortedList<File> fileList = new SortedList<>(File.class, new SortedList.Callback<>() {
+				@Override
+				public int compare(File lhs, File rhs) {
+					if (lhs.isDirectory() != rhs.isDirectory()) {
+						return lhs.isDirectory() ? -1 : 1;
+					}
+					return lhs.getName().compareToIgnoreCase(rhs.getName());
+				}
+
+				@Override
+				public boolean areContentsTheSame(File oldItem, File newItem) {
+					return oldItem.equals(newItem);
+				}
+
+				@Override
+				public boolean areItemsTheSame(File item1, File item2) {
+					return item1.equals(item2);
+				}
+
+				@Override
+				public void onChanged(int position, int count) {
+				}
+
+				@Override
+				public void onInserted(int position, int count) {
+				}
+
+				@Override
+				public void onMoved(int fromPosition, int toPosition) {
+				}
+
+				@Override
+				public void onRemoved(int position, int count) {
+				}
+			});
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && path.equals(Environment.getStorageDirectory())) {
 				StorageManager sm = ContextCompat.getSystemService(getContext(), StorageManager.class);
 				if (sm != null) {
@@ -285,7 +319,9 @@ public class FilteredFilePickerFragment extends AbstractFilePickerFragment<File>
 			File[] files = path.listFiles(fileFilter);
 			if (files != null) {
 				Arrays.sort(files, this::compareFiles);
-				fileList.addAll(Arrays.asList(files));
+				for (File file : files) {
+					fileList.add(file);
+				}
 			}
 			return fileList;
 		}
